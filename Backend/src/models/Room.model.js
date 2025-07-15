@@ -28,6 +28,10 @@ const RoomSchema = new mongoose.Schema({
     otherServices: {
         type: [String]
     },
+    customerGender: {
+        type: String,
+        enum: ["Male", "Female", "Any"]
+    },
     location: {
         type: {
             type: String,
