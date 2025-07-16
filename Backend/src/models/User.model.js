@@ -27,6 +27,10 @@ const UserSchema = new mongoose.Schema({
         enum: ['tenant', 'room-owner', 'service-provider'],
         default: 'tenant'
     },
+    occupation: {
+        type: String,
+        enum: ["student", "working-professional", "other"],
+    },
     profilePhoto: { type: String },
 }, { timestamps: true });
 
