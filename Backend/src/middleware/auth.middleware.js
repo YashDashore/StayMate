@@ -1,6 +1,6 @@
-import { AsyncHandler } from "../utils/AsyncHandler";
-import { ApiError } from "../utils/ApiError";
-import { User } from "../models/User.model";
+import { AsyncHandler } from "../utils/AsyncHandler.js";
+import { ApiError } from "../utils/ApiError.js";
+import { User } from "../models/User.model.js";
 import jwt from "jsonwebtoken"
 
 export const verifyJWT = AsyncHandler(async (req, res, next) => {
@@ -9,7 +9,7 @@ export const verifyJWT = AsyncHandler(async (req, res, next) => {
         if (!token)
             throw new ApiError(401, "Token not found");
         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-        const user = await User.findById(decodedToken?._id)
+        const user = await User.findById(decodedToken?.id)
         if (!user)
             throw new ApiError(401, "Invalid access Token");
         req.user = user;
