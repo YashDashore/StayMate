@@ -28,6 +28,7 @@ const UserSchema = new mongoose.Schema({
     userType: {
         type: String,
         enum: ['tenant', 'room-owner', 'service-provider'],
+        required: true,
         default: 'tenant'
     },
     occupation: {

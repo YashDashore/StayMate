@@ -19,6 +19,12 @@ app.use(
 app.use(express.static("public")); // used to store pdfs, public assets
 app.use(cookieParser())
 
+
+import UserRouter from "./routes/user.routes.js";
+
+// http://localhost:4000/pgHelper/v1/user
+app.use("/pgHelper/v1/user", UserRouter)
+
 app.get("/", (req, res) => {
     res.send("<h1>Home Page</h1>");
 });
