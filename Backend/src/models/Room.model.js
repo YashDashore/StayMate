@@ -8,6 +8,7 @@ const RoomSchema = new mongoose.Schema({
     },
     rentPerMonth: {
         type: Number,
+        min: [0, "Rent must be positive"],
         required: true
     },
     ratings: {
@@ -19,7 +20,8 @@ const RoomSchema = new mongoose.Schema({
     },
     category: {
         type: String,
-        enum: ["1RK", "1BHK", "2BHK", "3BHK"]
+        enum: ["1RK", "1BHK", "2BHK", "3BHK"],
+        required: true
     },
     isAvailable: {
         type: Boolean,
@@ -30,7 +32,8 @@ const RoomSchema = new mongoose.Schema({
     },
     customerGender: {
         type: String,
-        enum: ["Male", "Female", "Any"]
+        enum: ["Male", "Female", "Any"],
+        required: true
     },
     location: {
         type: {
@@ -45,10 +48,10 @@ const RoomSchema = new mongoose.Schema({
         }
     },
     address: {
-        city: String,
-        state: String,
-        street: String,
-        pincode: String,
+        city: { type: String, required: true },
+        state: { type: String, required: true },
+        street: { type: String },
+        pincode: { type: String, required: true }
     }
 }, { timestamps: true });
 

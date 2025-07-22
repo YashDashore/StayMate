@@ -21,9 +21,11 @@ app.use(cookieParser())
 
 
 import UserRouter from "./routes/user.routes.js";
+import RoomRouter from "./routes/room.routes.js";
 
 // http://localhost:4000/pgHelper/v1/user
 app.use("/pgHelper/v1/user", UserRouter)
+app.use("/pgHelper/v1/room", RoomRouter)
 
 app.get("/", (req, res) => {
     res.send("<h1>Home Page</h1>");
