@@ -43,8 +43,8 @@ StayMate is a full-stack web application designed to simplify the lives of anyon
 
 ```bash
 # Clone the repository
-git clone https://github.com/YashDashore/PgHelper.git
-cd PgHelper
+git clone https://github.com/YashDashore/StayMate.git
+cd StayMate
 
 # Setup Backend
 cd Backend
