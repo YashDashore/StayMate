@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 
+// Tiffin subscription facilities...
+
 const TiffinSchema = new mongoose.Schema({
     owner: {
         type: mongoose.Schema.Types.ObjectId,
@@ -23,7 +25,8 @@ const TiffinSchema = new mongoose.Schema({
         }
     },
     address: {
-        city: String,
+        city: { type: String, required: true },
+        state: String,
         street: String,
         pincode: String,
     },
