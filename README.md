@@ -6,10 +6,11 @@ StayMate is a full-stack web application designed to simplify the lives of anyon
 
 ### ✅ Backend (Implemented)
 
+- ✉️ Email verification via OTP during signup
+- 🔐 Secure authentication with JWT + role-based access (Admin/User)
 - 🔍 Search PGs and Tiffin Services with filters (city, price, delivery radius)
 - 📌 Store & manage service listings with city-based filtering
 - 🧾 MongoDB schema for PGs and Tiffin providers
-- 🔐 Authentication & role-based access (Admin/User)
 - 📤 Image uploads using Cloudinary
 - 📊 Admin endpoints to add/edit/delete listings
 
