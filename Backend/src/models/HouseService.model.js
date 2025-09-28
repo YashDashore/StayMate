@@ -8,7 +8,6 @@ const HouseServiceSchema = new mongoose.Schema({
     },
     service: {
         type: String,
-        enum: ["laundry", "maid", "plumber", "electrician"],
         required: true
     },
     charge: {

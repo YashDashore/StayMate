@@ -2,7 +2,31 @@ import { AsyncHandler } from "../utils/AsyncHandler.js"
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { User } from "../models/User.model.js";
-import { UploadOnCloud } from "../utils/CloudinaryUpload.js";
+import { UploadOnCloud, DeleteFromCloud } from "../utils/CloudinaryUpload.js";
+import { Email } from "../utils/sendEmail.js";
+
+const sendOtp = async (user) => {
+    try {
+        const now = new Date();
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpiry = new Date(now.getTime() + 10 * 60 * 1000);
+
+        user.otp = otp;
+        user.otpExpiry = otpExpiry;
+        user.lastOtpSentAt = now;
+
+        await user.save();
+
+        await Email({
+            to: user.email,
+            subject: "StayMate : Email Verification OTP",
+            text: `Your OTP is ${otp}. It is valid for 10 minutes.`,
+            html: `<p>Your OTP is <b>${otp}</b>. It is valid for 10 minutes.</p>`
+        });
+    } catch (error) {
+        throw new ApiError(500, "Failed to send otp");
+    }
+}
 
 const registerUser = AsyncHandler(async (req, res) => {
     const { username, email, password, contact, userType, occupation } = req.body;
@@ -28,14 +52,56 @@ const registerUser = AsyncHandler(async (req, res) => {
         contact,
         userType,
         occupation,
-        profilePhoto: profilePhoto1?.public_id || null
+        profilePhoto: profilePhoto1?.url || null
     })
 
-    const createdUser = await User.findById(user._id).select("-password -refreshToken");
+    await sendOtp(user);
+
+    const createdUser = await User.findById(user._id).select("-password -refreshToken -otp -otpExpiry");
     if (!createdUser)
         throw new ApiError(500, "User not created");
-    return res.status(201).json(new ApiResponse(200, createdUser, "User created successfully"))
+    return res.status(201).json(new ApiResponse(200, createdUser, "User registered. Verify Email."))
 })
+
+const verifyOtp = AsyncHandler(async (req, res) => {
+    const { email, otp } = req.body;
+
+    if (!email || !otp)
+        throw new ApiError(400, "Both email and otp are required");
+
+    const user = await User.findOne({ email });
+    if (!user)
+        throw new ApiError(404, "User not exist");
+
+    if (otp !== user.otp || new Date (user.otpExpiry).getTime() < Date.now())
+        throw new ApiError(401, "Invalid otp or Otp expired.");
+
+    user.isVerified = true;
+    user.otp = undefined;
+    user.otpExpiry = undefined;
+    user.lastOtpSentAt = undefined;
+
+    await user.save();
+    return res.status(200).json(new ApiResponse(200, {}, "Email verified successfully"));
+})
+
+const resendOtp = AsyncHandler(async (req, res) => {
+    const { email } = req.body;
+    if (!email)
+        throw new ApiError(400, "Enter email again");
+
+    const user = await User.findOne({ email });
+    if (!user)
+        throw new ApiError(404, "User not found");
+
+    if (user.lastOtpSentAt && Date.now() - new Date(user.lastOtpSentAt).getTime() < 60 * 1000) {
+        throw new ApiError(429, "Please wait 1 minute before requesting a new OTP");
+    }
+
+    await sendOtp(user);
+
+    return res.status(200).json(new ApiResponse(200, {}, "OTP resent successfully"));
+});
 
 const generateAccessAndRefreshTokens = async (user_Id) => {
     try {
@@ -52,14 +118,21 @@ const generateAccessAndRefreshTokens = async (user_Id) => {
 }
 
 const loginUser = AsyncHandler(async (req, res) => {
-    const { identifier, password } = req.body
+    const { identifier, password } = req.body;
+
     if (!identifier || !password)
         throw new ApiError(422, "Username/Email and password are required");
+
     const userExist = await User.findOne({
         $or: [{ username: identifier }, { email: identifier }]
     })
     if (!userExist)
         throw new ApiError(401, "Invalid Username or password");
+
+    if (!userExist.isVerified) {
+        throw new ApiError(403, "Please verify your email before logging in");
+    }
+
     const passwordCheck = await userExist.isPasswordCorrect(password);
     if (!passwordCheck)
         throw new ApiError(401, "Invalid Password");
@@ -167,8 +240,8 @@ const updateDetails = AsyncHandler(async (req, res) => {
         const newProfile = await UploadOnCloud(newProfilePath);
         if (!newProfile) throw new ApiError(400, "Image upload failed");
 
-        if (user.profilePhoto) await DeleteOnCloud(user.profilePhoto);
-        user.profilePhoto = newProfile.public_id;
+        if (user.profilePhoto) await DeleteFromCloud(user.profilePhoto);
+        user.profilePhoto = newProfile.url;
     }
     await user.save({ validateBeforeSave: false });
     const updatedUser = await User.findById(user._id).select("-password -refreshToken");
@@ -184,7 +257,7 @@ const deleteUser = AsyncHandler(async (req, res) => {
     const checkPass = await user.isPasswordCorrect(password);
     if (!checkPass)
         throw new ApiError(401, "Incorrect Password");
-    const deletedUser = await user.deleteOne();
+    const deletedUser = await user.remove();
     if (!deletedUser)
         throw new ApiError(404, "User not found");
     res.status(200)
@@ -199,9 +272,12 @@ const getUserDetails = AsyncHandler(async (req, res) => {
         .json(new ApiResponse(200, user, "User details"));
 })
 
+
+//  forget password
+
 export {
     registerUser, loginUser,
     logoutUser, accessRefreshToken,
     updatePassword, deleteUser,
-    getUserDetails, updateDetails
+    getUserDetails, updateDetails, verifyOtp, resendOtp
 }
