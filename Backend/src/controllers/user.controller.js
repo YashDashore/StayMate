@@ -53,7 +53,7 @@ const registerUser = AsyncHandler(async (req, res) => {
         contact,
         userType,
         occupation,
-        profilePhoto: profilePhoto1?.url || null
+        profilePhoto: profilePhoto1 ? { url: profilePhoto1.secure_url || profilePhoto1.url, publicId: profilePhoto1.public_id } : null
     })
 
     await sendOtp(user);
@@ -241,8 +241,10 @@ const updateDetails = AsyncHandler(async (req, res) => {
         const newProfile = await UploadOnCloud(newProfilePath);
         if (!newProfile) throw new ApiError(400, "Image upload failed");
 
-        if (user.profilePhoto) await DeleteFromCloud(user.profilePhoto);
-        user.profilePhoto = newProfile.url;
+        // delete old profile photo (handle both object and string legacy value)
+        const idToDeleteOld = user.profilePhoto ? (user.profilePhoto.publicId || user.profilePhoto.url || user.profilePhoto) : null;
+        if (idToDeleteOld) await DeleteFromCloud(idToDeleteOld);
+        user.profilePhoto = { url: newProfile.secure_url || newProfile.url, publicId: newProfile.public_id };
     }
     await user.save({ validateBeforeSave: false });
     const updatedUser = await User.findById(user._id).select("-password -serverRefreshToken");
@@ -258,6 +260,10 @@ const deleteUser = AsyncHandler(async (req, res) => {
     const checkPass = await user.isPasswordCorrect(password);
     if (!checkPass)
         throw new ApiError(401, "Incorrect Password");
+    // delete avatar from cloud if exists (handle both object and legacy string)
+    const idToDeleteProfile = user.profilePhoto ? (user.profilePhoto.publicId || (typeof user.profilePhoto === 'string' ? user.profilePhoto : user.profilePhoto.url)) : null;
+    if (idToDeleteProfile) await DeleteFromCloud(idToDeleteProfile);
+
     const deletedUser = await user.remove();
     if (!deletedUser)
         throw new ApiError(404, "User not found");

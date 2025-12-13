@@ -16,7 +16,13 @@ const RoomSchema = new mongoose.Schema({
         count: { type: Number, default: 0 }
     },
     photos: {
-        type: [String]
+        type: [
+            {
+                url: { type: String },
+                publicId: { type: String }
+            }
+        ],
+        default: []
     },
     category: {
         type: String,

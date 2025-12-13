@@ -58,7 +58,7 @@ const createRoomListing = AsyncHandler(async (req, res) => {
     for (const file of photoFiles) {
         const result = await UploadOnCloud(file.path);
         if (result?.public_id) {
-            uploadedPhotos.push(result.url);
+            uploadedPhotos.push({ url: result.secure_url || result.url, publicId: result.public_id });
         }
     }
 
@@ -93,8 +93,9 @@ const deleteRoomListing = AsyncHandler(async (req, res) => {
     if (req.user?._id.toString() !== room.owner.toString())
         throw new ApiError(403, "Only room owner can delete the room listing")
 
-    for (const photoId of room.photos) {
-        await DeleteFromCloud(photoId)
+    for (const photo of room.photos) {
+        const idToDelete = (photo && typeof photo === 'object') ? photo.publicId || photo.url : photo;
+        if (idToDelete) await DeleteFromCloud(idToDelete);
     }
 
     const deletedRoom = await Room.deleteOne({ _id: roomId })
@@ -159,9 +160,16 @@ const updateRoomDetails = AsyncHandler(async (req, res) => {
 
     if (Array.isArray(deletePhotos) && deletePhotos.length > 0) {
         for (const photoId of deletePhotos) {
-            if (room.photos.includes(photoId)) {
-                await DeleteFromCloud(photoId);
-                room.photos = room.photos.filter(id => id !== photoId);
+            const existingIndex = room.photos.findIndex((p) => {
+                if (!p) return false;
+                if (typeof p === 'string') return p === photoId || p.endsWith(`/${photoId}`);
+                return p.publicId === photoId || p.url === photoId || p.url?.endsWith(`/${photoId}`);
+            });
+            if (existingIndex > -1) {
+                const photoObj = room.photos[existingIndex];
+                const idToDelete = (typeof photoObj === 'string') ? photoObj : (photoObj.publicId || photoObj.url);
+                if (idToDelete) await DeleteFromCloud(idToDelete);
+                room.photos.splice(existingIndex, 1);
             }
         }
     }
@@ -170,7 +178,7 @@ const updateRoomDetails = AsyncHandler(async (req, res) => {
         for (const photo of addPhotos) {
             const result = await UploadOnCloud(photo.path);
             if (result?.public_id) {
-                room.photos.push(result.url);
+                room.photos.push({ url: result.secure_url || result.url, publicId: result.public_id });
             }
         }
     }

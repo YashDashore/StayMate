@@ -14,22 +14,39 @@ const UploadOnCloud = async (FileOnServer) => {
         const response = await cloudinary.uploader.upload(FileOnServer, {
             resource_type: "auto",
         });
-        fs.unlinkSync(FileOnServer);
+        if (FileOnServer && fs.existsSync(FileOnServer)) fs.unlinkSync(FileOnServer);
         return response;
     } catch (error) {
         console.log("Errorrrrr");
-        fs.unlinkSync(FileOnServer);
+        if (FileOnServer && fs.existsSync(FileOnServer)) fs.unlinkSync(FileOnServer);
         return null;
     }
 };
 
-const DeleteFromCloud = async (PublicId) => {
+const getPublicIdFromUrl = (url) => {
+    if (!url) return null;
     try {
-        await cloudinary.uploader.destroy(PublicId);
+        // Extract the public id from the URL, handling optional versioning
+        const match = url.match(/upload\/(?:v\d+\/)?(.+)\.[^.]+$/);
+        return match ? decodeURIComponent(match[1]) : null;
+    } catch (error) {
+        return null;
+    }
+};
+
+const DeleteFromCloud = async (PublicIdOrUrl) => {
+    try {
+        let publicId = PublicIdOrUrl;
+        if (!publicId) throw new ApiError(400, "Invalid publicId or URL");
+        if (typeof PublicIdOrUrl === 'string' && PublicIdOrUrl.startsWith('http')) {
+            const parsedId = getPublicIdFromUrl(PublicIdOrUrl);
+            if (parsedId) publicId = parsedId;
+        }
+        await cloudinary.uploader.destroy(publicId);
         return null;
     } catch (error) {
         throw new ApiError(500, "Image on cloud cannot be deleted");
     }
 }
 
-export { UploadOnCloud, DeleteFromCloud };
+export { UploadOnCloud, DeleteFromCloud, getPublicIdFromUrl };

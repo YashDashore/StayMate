@@ -65,7 +65,7 @@ const createTiffinService = AsyncHandler(async (req, res) => {
     for (const photo of photoList) {
         const result = await UploadOnCloud(photo.path);
         if (result?.public_id)
-            uploadPhoto.push(result.url)
+            uploadPhoto.push({ url: result.secure_url || result.url, publicId: result.public_id });
     }
 
     const createdTiffinCenter = await Tiffin.create({
@@ -161,9 +161,16 @@ const updateTiffinService = AsyncHandler(async (req, res) => {
     }
     if (Array.isArray(deletePhotos) && deletePhotos.length > 0) {
         for (const photoId of deletePhotos) {
-            if (tiffin.photos.includes(photoId)) {
-                await DeleteFromCloud(photoId);
-                tiffin.photos = tiffin.photos.filter(id => id !== photoId);
+            const existingIndex = tiffin.photos.findIndex((p) => {
+                if (!p) return false;
+                if (typeof p === 'string') return p === photoId || p.endsWith(`/${photoId}`);
+                return p.publicId === photoId || p.url === photoId || p.url?.endsWith(`/${photoId}`);
+            });
+            if (existingIndex > -1) {
+                const photoObj = tiffin.photos[existingIndex];
+                const idToDelete = (typeof photoObj === 'string') ? photoObj : (photoObj.publicId || photoObj.url);
+                if (idToDelete) await DeleteFromCloud(idToDelete);
+                tiffin.photos.splice(existingIndex, 1);
             }
         }
     }
@@ -172,7 +179,7 @@ const updateTiffinService = AsyncHandler(async (req, res) => {
         for (const photo of addPhotos) {
             const result = await UploadOnCloud(photo.path);
             if (result?.public_id) {
-                tiffin.photos.push(result.public_id);
+                tiffin.photos.push({ url: result.secure_url || result.url, publicId: result.public_id });
             }
         }
     }

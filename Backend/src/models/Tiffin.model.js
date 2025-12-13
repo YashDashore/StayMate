@@ -56,7 +56,13 @@ const TiffinSchema = new mongoose.Schema({
         twoTimeMonthly: { type: String }
     },
     photos: {
-        type: [String]
+        type: [
+            {
+                url: { type: String },
+                publicId: { type: String }
+            }
+        ],
+        default: []
     },
     landline: {
         type: String

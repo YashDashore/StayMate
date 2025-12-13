@@ -42,7 +42,10 @@ const UserSchema = new mongoose.Schema({
         type: String,
         enum: ["student", "working-professional", "other"],
     },
-    profilePhoto: { type: String },
+    profilePhoto: {
+        url: { type: String },
+        publicId: { type: String }
+    },
     serverRefreshToken: {
         type: String,
         select: false
