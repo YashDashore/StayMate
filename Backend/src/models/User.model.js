@@ -43,8 +43,9 @@ const UserSchema = new mongoose.Schema({
         enum: ["student", "working-professional", "other"],
     },
     profilePhoto: { type: String },
-    refreshToken: {
-        type: String
+    serverRefreshToken: {
+        type: String,
+        select: false
     },
     isVerified: {
         type: Boolean,
@@ -110,8 +111,8 @@ UserSchema.methods.generateAccessToken = function () {
     return jwt.sign(
         {
             id: this._id,
-            Username: this.Username,
-            Email: this.Email,
+            username: this.username,
+            email: this.email,
         },
         process.env.ACCESS_TOKEN_SECRET,
         { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
