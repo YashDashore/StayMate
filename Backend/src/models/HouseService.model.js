@@ -28,20 +28,6 @@ const HouseServiceSchema = new mongoose.Schema({
         average: { type: Number, default: 0 },
         count: { type: Number, default: 0 }
     },
-    location: {
-        type: {
-            type: String,
-            enum: ["Point"],
-            default: "Point",
-            required: true
-        },
-        coordinates: {
-            type: [Number], // [longitude, latitude]
-            required: true
-        }
-    }
 }, { timestamps: true });
-
-HouseServiceSchema.index({ location: "2dsphere" });
 
 export const HouseService = mongoose.model("HouseService", HouseServiceSchema);

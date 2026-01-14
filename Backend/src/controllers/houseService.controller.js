@@ -1,25 +1,37 @@
 import { HouseService } from "../models/HouseService.model.js";
+import { User } from "../models/User.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { AsyncHandler } from "../utils/AsyncHandler.js";
 
 const createHouseService = AsyncHandler(async (req, res) => {
-    const { service, charge, timings, location } = req.body;
-    const userId = req.user._id;
-    if (!userId)
-        throw new ApiError(404, "User id not found");
-    if (!charge || !timings?.start || !timings?.end || !charge || !service || !location?.coordinates)
+    let { service, charge, timings } = req.body;
+    const userId = req.user?._id;
+    const user = await User.findById(userId).select("userType");
+
+    if (!user) throw new ApiError(404, "User not found");
+
+    if (user.userType?.trim() !== "service-provider")
+        throw new ApiError(403, "Only service-provider can list house services");
+
+    if (typeof timings === "string") {
+        try {
+            timings = JSON.parse(timings);
+        } catch {
+            throw new ApiError(400, "Invalid timings format");
+        }
+    }
+    if (charge === undefined || !timings?.start || !timings?.end || !service)
         throw new ApiError(400, "All fields are required");
     const createdService = await HouseService.create({
         provider: userId,
         service,
         charge,
-        timings,
-        location
+        timings
     })
     if (!createdService)
         throw new ApiError(500, "Service cannot be created");
-    res.status(201)
+    return res.status(201)
         .json(new ApiResponse(201, createdService, "Service successfully listed"));
 })
 
@@ -64,7 +76,7 @@ const updateHouseService = AsyncHandler(async (req, res) => {
     if (userId.toString() !== existedService.provider.toString())
         throw new ApiError(403, "Only service provider can edit the house listing");
 
-    const allowfields = ["service", "charge", "timings", "location"]
+    const allowfields = ["service", "charge", "timings"]
 
     const updates = {};
     for (const key of allowfields) {
@@ -78,6 +90,18 @@ const updateHouseService = AsyncHandler(async (req, res) => {
     res.status(200)
         .json(new ApiResponse(200, updatedService, "Successfully updated  the service"));
 })
+
+const myServices = AsyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const user = await User.findById(userId).select("_id");
+    if (!user) throw new ApiError(404, "User not found");
+
+    const services = await HouseService.find({ provider: userId }).sort({ createdAt: -1 });
+    if (!services)
+        throw new ApiError(404, "No services found for this user");
+    return res.status(200)
+        .json(new ApiResponse(200, services, "Successfully fetched services"));
+});
 
 const getAllHouseServices = AsyncHandler(async (req, res) => {
     const { city, serviceType, minCharge, maxCharge, lat, lng } = req.query;
@@ -109,4 +133,5 @@ const getAllHouseServices = AsyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, services, "Fetched house services"));
 });
 
-export { createHouseService, deleteHouseService, updateHouseService, getAllHouseServices };
+export { createHouseService, deleteHouseService,
+     updateHouseService, getAllHouseServices, myServices };
