@@ -26,9 +26,9 @@ const TiffinSchema = new mongoose.Schema({
     },
     address: {
         city: { type: String, required: true },
-        state: String,
+        state: { type: String, required: true },
         street: String,
-        pincode: String,
+        pincode: { type: String, required: true }
     },
     deliveryAvailable: {
         type: Boolean,

@@ -18,10 +18,6 @@ const createTiffinService = AsyncHandler(async (req, res) => {
     let timings = req.body.timings;
     let price = req.body.price;
 
-    console.log("Raw location body:", req.body.location);
-    console.log("isString:", typeof location === "string");
-
-
     if (typeof location === 'string') {
         try {
             location = JSON.parse(location);
@@ -56,7 +52,7 @@ const createTiffinService = AsyncHandler(async (req, res) => {
     if (!name || !price.perPlate ||
         !timings.closingTime || !timings.openingTime ||
         !location?.coordinates ||
-        !address?.city)
+        !address?.city || !address?.state || !address?.pincode)
         throw new ApiError(400, "Certain fields are required");
 
     const uploadPhoto = [];
