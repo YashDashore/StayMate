@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {
     createTiffinService, deleteTiffinService,
-    getAllTiffins, updateTiffinService
+    getAllTiffins, updateTiffinService, myServices
 } from "../controllers/tiffin.controller.js";
 import { verifyJWT } from "../middleware/auth.middleware.js";
 import { Upload } from "../middleware/multer.middleware.js";
@@ -20,5 +20,6 @@ TiffinRouter.route("/update/:id").patch(verifyJWT,
 
 TiffinRouter.route("/delete/:id").delete(verifyJWT, deleteTiffinService);
 TiffinRouter.route("/allTiffins").get(getAllTiffins);
+TiffinRouter.route("/myServices").get(verifyJWT, myServices);
 
 export default TiffinRouter;

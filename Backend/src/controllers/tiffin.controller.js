@@ -60,7 +60,7 @@ const createTiffinService = AsyncHandler(async (req, res) => {
         throw new ApiError(400, "Certain fields are required");
 
     const uploadPhoto = [];
-    const photoList = req.files.photos || [];
+    const photoList = req.files?.photos || [];
 
     for (const photo of photoList) {
         const result = await UploadOnCloud(photo.path);
@@ -191,6 +191,16 @@ const updateTiffinService = AsyncHandler(async (req, res) => {
         .json(new ApiResponse(200, updatedTiffin, "Successfully Updated"))
 })
 
+const myServices = AsyncHandler(async (req, res) => {
+    const user = await User.findById(req.user?._id);
+    if (!user)
+        throw new ApiError(404, "User not found");
+    const tiffins = await Tiffin.find({ owner: user._id });
+    if (!tiffins)
+        throw new ApiError(404, "No tiffin services found for the user");
+    return res.status(200).json(new ApiResponse(200, tiffins, "Fetched user's tiffin services"));
+});
+
 const getAllTiffins = AsyncHandler(async (req, res) => {
     const { city, openingTime, closingTime, deliveryAvailable, page = 1, limit = 10, lat, lng } = req.query;
 
@@ -226,4 +236,7 @@ const getAllTiffins = AsyncHandler(async (req, res) => {
     );
 })
 
-export { createTiffinService, deleteTiffinService, updateTiffinService, getAllTiffins };
+export {
+    createTiffinService, deleteTiffinService,
+    updateTiffinService, getAllTiffins, myServices
+};

@@ -10,7 +10,7 @@ const createRoomListing = AsyncHandler(async (req, res) => {
     let { rentPerMonth, category, customerGender } = req.body;
 
     let otherServices = req.body.otherServices;
-    let location = req.body.location; 
+    let location = req.body.location;
     let address = req.body.address;
 
     const user = await User.findById(req.user?._id);
@@ -142,7 +142,6 @@ const updateRoomDetails = AsyncHandler(async (req, res) => {
         "rentPerMonth",
         "category",
         "isAvailable",
-        "otherServices",
         "customerGender",
         "location",
         "address",
@@ -157,6 +156,40 @@ const updateRoomDetails = AsyncHandler(async (req, res) => {
             updates[key] = req.body[key];
         }
     }
+
+    let otherServicesAdd = req.body.otherServicesAdd;
+    if (otherServicesAdd) {
+        if (typeof otherServicesAdd === "string") {
+            try {
+                otherServicesAdd = JSON.parse(otherServicesAdd);
+            } catch {
+                otherServicesAdd = [];
+            }
+        }
+        if (Array.isArray(otherServicesAdd) && otherServicesAdd.length > 0) {
+            room.otherServices.push(...otherServicesAdd);
+        }
+    }
+
+    let otherServicesRemove = req.body.otherServicesRemove;
+
+    if (otherServicesRemove) {
+        if (typeof otherServicesRemove === "string") {
+            try {
+                otherServicesRemove = JSON.parse(otherServicesRemove);
+            } catch {
+                otherServicesRemove = [];
+            }
+        }
+
+        if (Array.isArray(otherServicesRemove) && otherServicesRemove.length > 0) {
+            room.otherServices = room.otherServices.filter(
+                (service) => !otherServicesRemove.includes(service)
+            );
+        }
+    }
+
+    room.otherServices = [...new Set(room.otherServices.map(s => s.trim()).filter(Boolean))];
 
     if (Array.isArray(deletePhotos) && deletePhotos.length > 0) {
         for (const photoId of deletePhotos) {

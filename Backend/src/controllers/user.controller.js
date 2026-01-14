@@ -6,7 +6,7 @@ import { UploadOnCloud, DeleteFromCloud } from "../utils/CloudinaryUpload.js";
 import { Email } from "../utils/sendEmail.js";
 import jwt from "jsonwebtoken";
 
-const sendOtp = async (user) => {
+const sendOtp = AsyncHandler(async (user) => {
     try {
         const now = new Date();
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -21,13 +21,13 @@ const sendOtp = async (user) => {
         await Email({
             to: user.email,
             subject: "StayMate : Email Verification OTP",
-            text: `Your OTP is ${otp}. It is valid for 10 minutes.`,
+            text: `Your OTP is ${otp}. It is valid for 10 minutes. Thank you for registering with StayMate and You are Dazzling!`,
             html: `<p>Your OTP is <b>${otp}</b>. It is valid for 10 minutes.</p>`
         });
     } catch (error) {
         throw new ApiError(500, "Failed to send otp");
     }
-}
+});
 
 const registerUser = AsyncHandler(async (req, res) => {
     const { username, email, password, contact, userType, occupation } = req.body;
@@ -74,7 +74,7 @@ const verifyOtp = AsyncHandler(async (req, res) => {
     if (!user)
         throw new ApiError(404, "User not exist");
 
-    if (otp !== user.otp || new Date (user.otpExpiry).getTime() < Date.now())
+    if (otp !== user.otp || new Date(user.otpExpiry).getTime() < Date.now())
         throw new ApiError(401, "Invalid otp or Otp expired.");
 
     user.isVerified = true;
@@ -109,7 +109,7 @@ const generateAccessAndRefreshTokens = async (user_Id) => {
         const user = await User.findById(user_Id);
         const accessToken = user.generateAccessToken()
         const userRefreshToken = user.generateRefreshToken()
-        user.serverRefreshToken  = userRefreshToken;
+        user.serverRefreshToken = userRefreshToken;
 
         await user.save({ validateBeforeSave: false })
         return { accessToken, refreshToken: userRefreshToken };
@@ -137,7 +137,7 @@ const loginUser = AsyncHandler(async (req, res) => {
     const passwordCheck = await userExist.isPasswordCorrect(password);
     if (!passwordCheck)
         throw new ApiError(401, "Invalid Password");
-    const {  accessToken, refreshToken: userRefreshToken } = await generateAccessAndRefreshTokens(userExist._id);
+    const { accessToken, refreshToken: userRefreshToken } = await generateAccessAndRefreshTokens(userExist._id);
 
     const UpdatedUser = await User.findById(userExist._id).select("-password -serverRefreshToken");
     const options = {
@@ -257,16 +257,25 @@ const deleteUser = AsyncHandler(async (req, res) => {
     if (!password)
         throw new ApiError(400, "Enter password");
     const user = await User.findById(req.user?._id);
+    if (!user)
+        throw new ApiError(404, "User not found");
     const checkPass = await user.isPasswordCorrect(password);
     if (!checkPass)
         throw new ApiError(401, "Incorrect Password");
-    // delete avatar from cloud if exists (handle both object and legacy string)
+    
     const idToDeleteProfile = user.profilePhoto ? (user.profilePhoto.publicId || (typeof user.profilePhoto === 'string' ? user.profilePhoto : user.profilePhoto.url)) : null;
-    if (idToDeleteProfile) await DeleteFromCloud(idToDeleteProfile);
 
-    const deletedUser = await user.remove();
+    if (idToDeleteProfile) {
+    try {
+        await DeleteFromCloud(idToDeleteProfile);
+    } catch (error) {
+        console.error("Cloud delete failed:", error);
+    }
+}
+
+    const deletedUser = await User.findByIdAndDelete(req.user?._id);
     if (!deletedUser)
-        throw new ApiError(404, "User not found");
+        throw new ApiError(400, "Error occurred in deleting user");
     res.status(200)
         .json(new ApiResponse(200, {}, "User deleted Successfully"));
 })

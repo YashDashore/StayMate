@@ -92,7 +92,7 @@ const getAllHouseServices = AsyncHandler(async (req, res) => {
         if (maxCharge) filters.charge.$lte = Number(maxCharge);
     }
 
-    const radius = parseFloat(req.query.radius) || 3;
+    const radius = parseFloat(req.query.radius) || 6;
     const radiusInMeters = radius * 1000;
 
     if (lat && lng) {
