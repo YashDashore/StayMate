@@ -9,14 +9,14 @@ const LpgSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    capacity: {
-        type: String,
-        required: true
-    },
-    price: {
-        cylinder: { type: String },
+    cylinder: [{
+        capacity: {
+            type: String,
+            required: true
+        },
+        newCylinder: { type: String, required: true },
         refill: { type: String }
-    },
+    }],
     location: {
         type: {
             type: String,
@@ -25,15 +25,15 @@ const LpgSchema = new mongoose.Schema({
             required: true
         },
         coordinates: {
-            type: [Number], // [longitude, latitude]
+            type: [Number],
             required: true
         }
     },
     address: {
-        city: String,
-        state: String,
-        street: String,
-        pincode: String,
+        city: { type: String, required: true },
+        state: { type: String, required: true },
+        street: { type: String },
+        pincode: { type: String, required: true },
     },
     timings: {
         openingTime: {
